@@ -175,7 +175,7 @@ def updated() {
     state.path = "/write?db=${state.databaseName}"
     state.headers = [:] 
     state.headers.put("HOST", "${state.databaseHost}:${state.databasePort}")
-    state.headers.put("Content-Type", "application/x-www-form-urlencoded")
+    state.headers.put("Content-Type", "text/plain; charset=UTF-8")
     if (state.databaseUser && state.databasePass) {
         state.headers.put("Authorization", encodeCredentialsBasic(state.databaseUser, state.databasePass))
     }
@@ -298,7 +298,7 @@ def handleEvent(evt) {
     def value = escapeStringForInfluxDB(evt.value)
     def valueBinary = ''
     
-    def data = "${measurement},deviceId=${deviceId},deviceName=${deviceName},groupId=${groupId},groupName=${groupName},hubId=${hubId},hubName=${hubName},locationId=${locationId},locationName=${locationName}"
+    def data = "${measurement},deviceId=${deviceId},deviceName=${deviceName}"
     
     // Unit tag and fields depend on the event type:
     //  Most string-valued attributes can be translated to a binary value too.
@@ -472,20 +472,15 @@ def handleEvent(evt) {
         valueBinary = ('closed' == evt.value) ? '1i' : '0i'
         data += ",unit=${unit} value=${value},valueBinary=${valueBinary}"
     }
-    else if ('level' == evt.name) {
-		unit = '%'
-    	value = value.toInteger()
-    	data += ",unit=${unit} value=${value}"
-	} 
     // Catch any other event with a string value that hasn't been handled:
-    else if (evt.value ==~ /.*[^0-9\.,-].*/) { // match if any characters are not digits, period, comma, or hyphen.
-		logger("handleEvent(): Found a string value that's not explicitly handled: Device Name: ${deviceName}, Event Name: ${evt.name}, Value: ${evt.value}","warn")
-        value = '"' + value + '"'
-        data += ",unit=${unit} value=${value}"
-    }
+    //else if (evt.value ==~ /.*[^0-9\.,-].*/) { // match if any characters are not digits, period, comma, or hyphen.
+	//	logger("handleEvent(): Found a string value that's not explicitly handled: Device Name: ${deviceName}, Event Name: ${evt.name}, Value: ${evt.value}","warn")
+    //    value = '"' + value + '"'
+    //    data += ",unit=${unit} value=${value}"
+    //}
     // Catch any other general numerical event (carbonDioxide, power, energy, humidity, level, temperature, ultravioletIndex, voltage, etc).
     else {
-    	data += ",unit=${unit} value=${value}"
+    	data += ",unit=${unit} value=${value}    "
         logger("value: $value data: $data","trace")
     }
     
@@ -602,7 +597,7 @@ def logSystemProperties() {
  *  Uses hubAction instead of httpPost() in case InfluxDB server is on the same LAN as the Smartthings Hub.
  **/
 def postToInfluxDB(data) {
-    logger("postToInfluxDB(): Posting data to InfluxDB: Host: ${state.databaseHost}, Port: ${state.databasePort}, Database: ${state.databaseName}, Data: [${data}]","debug")
+    logger("postToInfluxDB(): Posting data to InfluxDB: Host: ${state.databaseHost}, Port: ${state.databasePort}, Database: ${state.databaseName}, Data: [${data}], Headers: [${state.headers}]","debug")
     
     try {
         def hubAction = new physicalgraph.device.HubAction(
