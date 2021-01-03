@@ -597,7 +597,10 @@ def logSystemProperties() {
  *  Uses hubAction instead of httpPost() in case InfluxDB server is on the same LAN as the Smartthings Hub.
  **/
 def postToInfluxDB(data) {
-    logger("postToInfluxDB(): Posting data to InfluxDB: Host: ${state.databaseHost}, Port: ${state.databasePort}, Database: ${state.databaseName}, Data: [${data}], Headers: [${state.headers}]","debug")
+	def headers = [:]
+		headers.put("HOST", "${state.databaseHost}:${state.databasePort}")
+    	headers.put("Content-Type", "text/plain; charset=UTF-8")
+    logger("postToInfluxDB(): Posting data to InfluxDB: Host: ${state.databaseHost}, Port: ${state.databasePort}, Database: ${state.databaseName}, Data: [${data}], My Headers: [${headers}]","debug")
     
     try {
         def hubAction = new physicalgraph.device.HubAction(
@@ -605,7 +608,7 @@ def postToInfluxDB(data) {
                 method: "POST",
                 path: state.path,
                 body: data,
-                headers: state.headers
+                headers: headers
             ],
             null,
             [ callback: handleInfluxResponse ]
